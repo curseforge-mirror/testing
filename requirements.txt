@@ -1,2 +1,3 @@
-git+https://github.com/curseforge-mirror/cloudscraper#egg=cloudscraper
+requests
 beautifulsoup4
+tenacity
