@@ -259,6 +259,25 @@ class ReleasePipeline:
             )
         return m
 
+    def _latest_manifest_matches(self, manifest):
+        repo = os.getenv("GITHUB_REPOSITORY", "")
+        if not repo:
+            return False
+        owner, name = repo.split("/", 1)
+        r = self.gh.get(f"{GH_API}/repos/{owner}/{name}/releases")
+        r.raise_for_status()
+        rels = r.json()
+        if not rels:
+            return False
+        for a in rels[0].get("assets", []):
+            if a["name"] == "release.json":
+                dl = requests.get(a["browser_download_url"])
+                try:
+                    return dl.json() == manifest
+                except:
+                    return False
+        return False
+
     def _get_or_create_release(self, tag, body_md):
         repo = os.getenv("GITHUB_REPOSITORY", "")
         owner, name = repo.split("/", 1)
@@ -297,8 +316,13 @@ class ReleasePipeline:
 
         downloads = [self._download_file(f) for f in files]
         manifest = self._build_manifest(downloads)
+
         with open("release.json", "w") as f:
             json.dump(manifest, f, indent=2)
+
+        if self._latest_manifest_matches(manifest):
+            log.info("No changes since last release → exiting.")
+            return
 
         changelogs = [self._fetch_changelog_md(info["id"]) for _, _, info in downloads]
         body_md = "\n\n---\n\n".join(changelogs)
