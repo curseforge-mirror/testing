@@ -297,7 +297,7 @@ class ReleasePipeline:
 
         downloads = [self._download_file(f) for f in files]
         manifest = self._build_manifest(downloads)
-        with open("release.yaml", "w") as f:
+        with open("release.json", "w") as f:
             json.dump(manifest, f, indent=2)
 
         changelogs = [self._fetch_changelog_md(info["id"]) for _, _, info in downloads]
@@ -308,7 +308,7 @@ class ReleasePipeline:
 
         for fn, _, _ in downloads:
             self._upload_asset(upload_url, fn, "application/zip")
-        self._upload_asset(upload_url, "release.yaml", "application/x-yaml")
+        self._upload_asset(upload_url, "release.json", "application/json")
 
         log.info("✅ Release complete.")
 
